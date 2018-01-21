@@ -6,5 +6,5 @@ To use this properly on your local machine, first follow the first two
 instructions at the top  of the page [here](https://wpilib.screenstepslive.com/s/currentCS/m/java).
 Then create a new Java Robot Project and select Iterative Robot.
 
-Paste the files from this repository in the `src` folder of your project and
+Paste the files from this repository (except `README.md`) in the `src` folder of your project and
 you're off to the races.
