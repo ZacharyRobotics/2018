@@ -1,5 +1,7 @@
 package org.usfirst.frc.team6489.robot;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.command.Scheduler;
@@ -14,7 +16,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * directory.
  **/
 public class Robot extends IterativeRobot {
-	// TODO: Multithreading? Check https://wpilib.screenstepslive.com/s/currentCS/m/java/l/681690-multithreading-in-java
 	final String leftAuto = "Left Starting Position";
 	final String centerAuto = "Center Starting Position";
 	final String rightAuto = "Right Starting Position";
@@ -22,7 +23,8 @@ public class Robot extends IterativeRobot {
 	SendableChooser<String> chooser = new SendableChooser<>();
 	
 	public static Robot self;
-	public static String allianceColor = "Blue";
+	public static Alliance allianceColor = DriverStation.getInstance().getAlliance();
+	public double start = 0;
 	
 	/** Negative is forwards! **/
 	Spark rightWheels;
@@ -31,10 +33,7 @@ public class Robot extends IterativeRobot {
 	
 	Spark forklift;
 	Spark cubeMotor;
-	
-	/* The controls need to be properly initialized. Check the below page if it doesn't work:
-	 * https://github.com/FRC-1902/2015-game/blob/master/2015%20Robot/src/com/explodingbacon/robot
-	 */
+
 	public static OI oi;
 
 	/**
@@ -43,10 +42,8 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void robotInit() {
-		chooser.addObject("Left Start", leftAuto);
-		chooser.addObject("Center Start", centerAuto);
-		chooser.addObject("Right Start", rightAuto);
-		SmartDashboard.putData("Autonomous mode chooser", chooser);
+		System.out.println("Our alliance color is " + allianceColor);
+		
 		// Wheels
 		rightWheels = new Spark(0);
 		leftWheels = new Spark(1);
@@ -75,9 +72,9 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousInit() {
 		//autonomousCommand = chooser.getSelected();
-		// TODO: Test if selecting different autonomous modes works!
 		autonomousCommand = SmartDashboard.getString("Autonomous Selector", centerAuto);
 		System.out.println("Autonomous selected: " + autonomousCommand);
+		System.out.println("Our alliance color is " + allianceColor);
 	}
 
 	/**
@@ -85,12 +82,13 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void autonomousPeriodic() {
+		System.out.println("Our alliance color is " + allianceColor);
 		Scheduler.getInstance().run(); // Is this necessary? TODO: If it doesn't work, try commenting this out!
 		switch (autonomousCommand) {
 			case leftAuto:
 				// Go straight
-				String light = "Blue";//sensor.getColor(); (modify to take input from light sensor)
-				if (light == allianceColor) {
+				//String light = "Blue";//sensor.getColor(); (modify to take input from light sensor)
+				if (/*light == */allianceColor != null) {
 					// Implement a while loop like the default, but FIXED (loop can end)
 					forklift.set(0.3);
 					cubeMotor.set(0.35);
@@ -124,20 +122,24 @@ public class Robot extends IterativeRobot {
 				break;
 			case centerAuto:
 			default:
-				// Put center auto code here
-				double time = System.currentTimeMillis();
-				while (true) {
-					// TODO: Modify condition so it will switch from auto to teleOp (set public variable to System Time?)
-					if (System.currentTimeMillis() <= time + 5000) {
-						rightWheels.set(-0.5);
-						leftWheels.set(0.5);
-					} else {
-						rightWheels.set(0);
-						leftWheels.set(0);
-					}
+				System.out.println("Our alliance color is " + allianceColor);
+				
+				if (start == 0) {
+					start = System.currentTimeMillis();
 				}
 				
-				//break;
+				double time = System.currentTimeMillis();
+				
+				// TODO: Modify condition so it will switch from auto to teleOp (set public variable to System Time?)
+				if (time <= start + 1000) {
+					rightWheels.set(-0.25);
+					leftWheels.set(0.25);
+				} else if (time > start) {
+					rightWheels.set(0);
+					leftWheels.set(0);
+				}
+				
+				break;
 			case rightAuto:
 				
 				break;
@@ -150,12 +152,11 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		// Driving (uses left joystick for left wheels and right joystick for right wheels)
-		leftWheels.set(-OI.xbox.getY1());
-		rightWheels.set(OI.xbox.getY2());
+		leftWheels.set(-OI.xbox.getY1() / 3); // TODO: Toggle between divisors with X button
+		rightWheels.set(OI.xbox.getY2() / 3);
 		
 		// Forklift (uses left bumper for up and right bumper for down)
 		if (OI.forkliftUp != null) {
-			// TODO: Test if it goes the right way.
 			forklift.set(0.5);
 		} else if (OI.forkliftDown != null) {
 			forklift.set(-0.5);
@@ -166,7 +167,6 @@ public class Robot extends IterativeRobot {
 		
 		// Cube intake/output (uses left trigger for in and right trigger for out)
 		if (cubeIn != 0) {
-			// TODO: Test if it goes the right way.
 			// TODO: Check what numbers are output!
 			cubeMotor.set(cubeIn / 2);
 		}
