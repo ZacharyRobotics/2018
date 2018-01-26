@@ -16,15 +16,27 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * directory.
  **/
 public class Robot extends IterativeRobot {
-	final String leftAuto = "Left Starting Position";
-	final String centerAuto = "Center Starting Position";
-	final String rightAuto = "Right Starting Position";
-	String autonomousCommand;
 	SendableChooser<String> chooser = new SendableChooser<>();
 	
+	/** Is this even used? **/
 	public static Robot self;
+	
+	/** Gets the team's color from the Driver Station. **/
 	public static Alliance allianceColor = DriverStation.getInstance().getAlliance();
+	/** Holds the team color converted to a string value; used for light sensor comparison. **/
+	public String color;
+	public String light;
+	
+	/** The starting location of the robot; used in autonomous. **/
+	public static int station = DriverStation.getInstance().getLocation();
+	
+	/** Easy way to measure out commands in autonomous; records start time of auto. **/
 	public double start = 0;
+	
+	// Used in teleOp
+	public Boolean toggle = false;
+	public Boolean previousButton = false;
+	public Boolean currentButton = false;
 	
 	/** Negative is forwards! **/
 	Spark rightWheels;
@@ -42,7 +54,12 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void robotInit() {
-		System.out.println("Our alliance color is " + allianceColor);
+		// Easy way to compare with the light sensor output
+		if (allianceColor == DriverStation.Alliance.Blue) {
+			color = "Blue";
+		} else {
+			color="Red";
+		}
 		
 		// Wheels
 		rightWheels = new Spark(0);
@@ -71,10 +88,7 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void autonomousInit() {
-		//autonomousCommand = chooser.getSelected();
-		autonomousCommand = SmartDashboard.getString("Autonomous Selector", centerAuto);
-		System.out.println("Autonomous selected: " + autonomousCommand);
-		System.out.println("Our alliance color is " + allianceColor);
+		
 	}
 
 	/**
@@ -82,18 +96,17 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void autonomousPeriodic() {
-		System.out.println("Our alliance color is " + allianceColor);
-		Scheduler.getInstance().run(); // Is this necessary? TODO: If it doesn't work, try commenting this out!
-		switch (autonomousCommand) {
-			case leftAuto:
+		Scheduler.getInstance().run();
+		switch (station) {
+			case 1:
 				// Go straight
-				//String light = "Blue";//sensor.getColor(); (modify to take input from light sensor)
-				if (/*light == */allianceColor != null) {
+				light = "Blue"; // TODO: FIX!
+				
+				if (light == color) {
 					// Implement a while loop like the default, but FIXED (loop can end)
 					forklift.set(0.3);
 					cubeMotor.set(0.35);
 				} else {
-					// Same type of loop as above (timer as a general time but if statements for individual instructions? Cleaner code!)
 					rightWheels.set(-0.5); // Turns left
 					leftWheels.set(-0.5);
 					
@@ -120,27 +133,29 @@ public class Robot extends IterativeRobot {
 					cubeMotor.set(0.35);
 				}
 				break;
-			case centerAuto:
+			case 2:
 			default:
-				System.out.println("Our alliance color is " + allianceColor);
-				
 				if (start == 0) {
 					start = System.currentTimeMillis();
 				}
 				
 				double time = System.currentTimeMillis();
-				
-				// TODO: Modify condition so it will switch from auto to teleOp (set public variable to System Time?)
-				if (time <= start + 1000) {
+				if (time <= start + 3000) {
+					rightWheels.set(-0.75);
+					leftWheels.set(0.75);
+				} else if (time <= start + 3225) {
 					rightWheels.set(-0.25);
 					leftWheels.set(0.25);
-				} else if (time > start) {
-					rightWheels.set(0);
-					leftWheels.set(0);
+				} else if (time <= start + 3250) { // TODO: Use this to make another switch case?
+					// Input
+				} else if (time <= start + 3500 ) { // Turns left
+					rightWheels.set(-0.25);
+					leftWheels.set(-0.25);
 				}
 				
 				break;
-			case rightAuto:
+			case 3:
+				
 				
 				break;
 		}
@@ -152,8 +167,17 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopPeriodic() {
 		// Driving (uses left joystick for left wheels and right joystick for right wheels)
-		leftWheels.set(-OI.xbox.getY1() / 3); // TODO: Toggle between divisors with X button
-		rightWheels.set(OI.xbox.getY2() / 3);
+		
+		previousButton = currentButton; 
+		currentButton = OI.xbox.getRawButton(3);
+
+		if (currentButton && !previousButton) {
+			toggle = toggle ? false : true;
+		}
+		
+		// Have to be reversed because something is sketchy
+		rightWheels.set((double)(toggle ? OI.xbox.getY2() / 2 : OI.xbox.getY2()));
+		leftWheels.set((double)(toggle ? -OI.xbox.getY1() / 2 : -OI.xbox.getY1()));
 		
 		// Forklift (uses left bumper for up and right bumper for down)
 		if (OI.forkliftUp != null) {
@@ -166,12 +190,11 @@ public class Robot extends IterativeRobot {
 		double cubeOut = OI.xbox.getRightTrigger();
 		
 		// Cube intake/output (uses left trigger for in and right trigger for out)
-		if (cubeIn != 0) {
-			// TODO: Check what numbers are output!
+		if (cubeIn == 0 && cubeOut == 0) {
+			cubeMotor.set(0);
+		} else if (cubeIn != 0) {
 			cubeMotor.set(cubeIn / 2);
-		}
-		
-		if (cubeOut != 0) {
+		} else if (cubeOut != 0) {
 			cubeMotor.set(-cubeOut / 2);
 		}
 	}
