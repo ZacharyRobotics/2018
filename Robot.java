@@ -23,15 +23,19 @@ public class Robot extends IterativeRobot {
 	
 	/** Gets the team's color from the Driver Station. **/
 	public static Alliance allianceColor = DriverStation.getInstance().getAlliance();
-	/** Holds the team color converted to a string value; used for light sensor comparison. **/
-	public String color;
-	public String light;
 	
 	/** The starting location of the robot; used in autonomous. **/
-	public static int station = DriverStation.getInstance().getLocation();
+	public static int location = DriverStation.getInstance().getLocation();
 	
 	/** Easy way to measure out commands in autonomous; records start time of auto. **/
 	public double start = 0;
+	/** Contains the locations of the team point-earners (switch and scale) **/
+	public String gameData;
+	
+	
+	/** SET THIS BEFORE MATCH! **/
+	public String goal = "switch"; // TODO: Get DS input?
+	
 	
 	// Used in teleOp
 	public Boolean toggle = false;
@@ -43,7 +47,9 @@ public class Robot extends IterativeRobot {
 	/** Positive is forwards! **/
 	Spark leftWheels;
 	
+	/** ? is up! **/
 	Spark forklift;
+	/** ? is out! **/
 	Spark cubeMotor;
 
 	public static OI oi;
@@ -54,13 +60,6 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void robotInit() {
-		// Easy way to compare with the light sensor output
-		if (allianceColor == DriverStation.Alliance.Blue) {
-			color = "Blue";
-		} else {
-			color="Red";
-		}
-		
 		// Wheels
 		rightWheels = new Spark(0);
 		leftWheels = new Spark(1);
@@ -88,67 +87,138 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void autonomousInit() {
-		
+		gameData = DriverStation.getInstance().getGameSpecificMessage();
 	}
 
 	/**
-	 * This function is called periodically during autonomous
+	 * This function is called periodically during autonomous.
 	 **/
 	@Override
 	public void autonomousPeriodic() {
-		Scheduler.getInstance().run();
-		switch (station) {
+		Scheduler.getInstance().run(); // TODO: Test without?
+		if (start == 0) {
+			start = System.currentTimeMillis();
+		}
+		
+		double time = System.currentTimeMillis();
+		
+		switch (location) {
 			case 1:
-				// Go straight
-				light = "Blue"; // TODO: FIX!
-				
-				if (light == color) {
-					// Implement a while loop like the default, but FIXED (loop can end)
-					forklift.set(0.3);
-					cubeMotor.set(0.35);
-				} else {
-					rightWheels.set(-0.5); // Turns left
-					leftWheels.set(-0.5);
+				if (gameData.charAt(0) == 'L' && goal == "switch") { // We are left and switch is left
+					// TODO: Test timing!
+					// Goes straight to the switch and puts cube in
+					if (time <= start + 1300) {
+						rightWheels.set(-0.75); // Goes forward (1.3 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 1700) {
+						forklift.set(0.4); // Forklift rises (0.4 seconds)
+					} else if (time <= start + 2200) {
+						cubeMotor.set(0.35); // Cube shoots out (0.5 seconds)
+					}
+				} else if (gameData.charAt(0) == 'R' && goal == "switch") { // We are left and switch is right
+					// TODO: Test timing!
+					// Goes the long way around the switch (avoid collisions)
+					if (time <= start + 1300) {
+						rightWheels.set(-0.75); // Goes forward (1.3 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 1600) {
+						rightWheels.set(0.5); // Turns left (0.3 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 2300) {
+						rightWheels.set(-0.5); // Goes forward (0.7 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 2600) {
+						rightWheels.set(0.5); // Turns right (0.3  seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 3100) {
+						rightWheels.set(-0.75); // Goes forward (0.5 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 3400) {
+						rightWheels.set(0.5); // Turns right (0.3 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 4300) {
+						rightWheels.set(-0.75); // Goes forward (0.9 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 4600) {
+						rightWheels.set(0.5); // Turns right (0.3 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 5350) {
+						forklift.set(0.3); // Forklift rises (0.75 seconds)
+					} else if (time <= start + 5850) {
+						cubeMotor.set(0.35); // Cube dispenses (0.5 seconds)
+					}
 					
-					// For if we are going to go around the long way
-					rightWheels.set(-0.5); // Goes forward
-					leftWheels.set(0.5);
-					
-					rightWheels.set(0.5); // Turns right
-					leftWheels.set(0.5);
-					
-					rightWheels.set(-0.5); // Goes forward
-					leftWheels.set(0.5);
-					
-					rightWheels.set(0.5); // Turns right
-					leftWheels.set(0.5);
-					
-					rightWheels.set(-0.5); // Goes forward
-					leftWheels.set(0.5);
-					
-					rightWheels.set(0.5); // Turns right
-					leftWheels.set(0.5);
-					
-					forklift.set(0.3); // Dispenses cube
-					cubeMotor.set(0.35);
+				} else if (gameData.charAt(1) == 'L' && goal == "scale") { // We are left and scale is left
+					// TODO: Test timing!
+					// Goes the long way around the switch (avoid collisions)
+					if (time <= start + 200) {
+						rightWheels.set(0.5); // Turns left (0.2 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 1300) {
+						rightWheels.set(-0.75); // Goes forward (1.1 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 1900) {
+						rightWheels.set(-0.5); // Turns right (0.6 seconds)
+						leftWheels.set(-0.5);
+					} else if (time <= start + 2300) {
+						rightWheels.set(-0.5); // Goes forward (0.4 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 2500) {
+						rightWheels.set(0.5); // Turns right (0.2 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 2600) {
+						rightWheels.set(-0.75); // Goes forward (0.1 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 2900) {
+						rightWheels.set(-0.5); // Turns left (0.3 seconds)
+						leftWheels.set(-0.5);
+					} else if (time <= start + 3400) {
+						forklift.set(0.7); // Forklift rises (0.5 seconds)
+					} else if (time <= start + 3900) {
+						cubeMotor.set(0.55); // Cube dispenses (0.5 seconds)
+					}
+				} else if (gameData.charAt(1) == 'R' && goal == "scale") { // We are left and scale is right
+					// TODO: Test timing!
+					// Goes the long way around the switch (avoid collisions)
+					if (time <= start + 200) {
+						rightWheels.set(0.5); // Turns left (0.2 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 1300) {
+						rightWheels.set(-0.75); // Goes forward (1.1 seconds)
+						leftWheels.set(0.75);
+					} else if (time <= start + 1900) {
+						rightWheels.set(-0.5); // Turns right (0.6 seconds)
+						leftWheels.set(-0.5);
+					} else if (time <= start + 2300) {
+						rightWheels.set(-0.5); // Goes forward (0.4 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 2500) {
+						rightWheels.set(0.5); // Turns right (0.2 seconds)
+						leftWheels.set(0.5);
+					} else if (time <= start + 3000) {
+						rightWheels.set(-0.75); // Goes forward (0.5 seconds)
+						leftWheels.set(0.75);
+					}else if (time <= start + 3300) {
+						rightWheels.set(-0.5); // Turns left (0.3 seconds)
+						leftWheels.set(-0.5);
+					} else if (time <= start + 3800) {
+						forklift.set(0.7); // Forklift rises (0.5 seconds)
+					} else if (time <= start + 4300) {
+						cubeMotor.set(0.55); // Cube dispenses (0.5 seconds)
+					}
 				}
+				
 				break;
 			case 2:
-			default:
-				if (start == 0) {
-					start = System.currentTimeMillis();
-				}
-				
-				double time = System.currentTimeMillis();
 				if (time <= start + 3000) {
 					rightWheels.set(-0.75);
 					leftWheels.set(0.75);
-				} else if (time <= start + 3225) {
+				} else if (time <= start + 3275) {
 					rightWheels.set(-0.25);
 					leftWheels.set(0.25);
-				} else if (time <= start + 3250) { // TODO: Use this to make another switch case?
+				} else if (time <= start + 3350) {
 					// Input
-				} else if (time <= start + 3500 ) { // Turns left
+				} else if (time <= start + 3500 ) { // Turns left for 
 					rightWheels.set(-0.25);
 					leftWheels.set(-0.25);
 				}
@@ -162,7 +232,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	/**
-	 * This function is called periodically during operator control
+	 * This function is called periodically during operator control.
 	 **/
 	@Override
 	public void teleopPeriodic() {
