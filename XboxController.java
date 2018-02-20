@@ -40,10 +40,10 @@ public class XboxController extends Joystick {
 	}
 	
 	/**
-	 * Gets the Y axis of the right Xbox joystick.
+	 * Gets the X axis of the right Xbox joystick.
 	 **/
-	public double getY2() {
-		return getRawAxis(5);
+	public double getX2() {
+		return getRawAxis(4);
 	}
 	
 	/**

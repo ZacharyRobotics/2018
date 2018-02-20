@@ -28,9 +28,6 @@ public class OI {
 		
 		leftControls = new JoystickButton(left, 11);
 		rightControls = new JoystickButton(right, 12);
-		
-		forkliftUp = xbox.leftBumper;
-		forkliftDown = xbox.rightBumper;
 	}
 	
 	public OI() {

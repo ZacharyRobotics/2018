@@ -35,6 +35,7 @@ public class Robot extends IterativeRobot {
 	public Boolean toggle = false;
 	public Boolean previousButton = false;
 	public Boolean currentButton = false;
+	public long forkliftStopper = 0L;
 	
 	/** Negative is forwards! **/
 	Spark rightWheels;
@@ -55,8 +56,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void robotInit() {
 		// Wheels
-		rightWheels = new Spark(5);
-		leftWheels = new Spark(6);
+		rightWheels = new Spark(0);
+		leftWheels = new Spark(1);
 		
 		// Forklift (check port)
 		forklift = new Spark(2);
@@ -184,14 +185,24 @@ public class Robot extends IterativeRobot {
 		}
 		
 		// Have to be reversed because something is sketchy
-		rightWheels.set((double)(toggle ? OI.xbox.getY2() / 2 : OI.xbox.getY2()));
-		leftWheels.set((double)(toggle ? -OI.xbox.getY1() / 2 : -OI.xbox.getY1()));
+		double speed = OI.xbox.getY1();
+		double right = speed + (OI.xbox.getX2() / 2);
+		double left = speed - (OI.xbox.getX2() / 2);
+		rightWheels.set((double)(toggle ? right / 2 : right));
+		leftWheels.set((double)(toggle ? -left / 2 : -left));
 		
 		// Forklift (uses left bumper for up and right bumper for down)
-		if (OI.forkliftUp != null) {
-			forklift.set(0.5);
-		} else if (OI.forkliftDown != null) {
-			forklift.set(-0.5);
+		if (OI.xbox.getRawButton(5)) { // Goes up!
+			forklift.set(0.6);
+			forkliftStopper++;
+		} else if (OI.xbox.getRawButton(6)) { // Goes down!
+			// Gives it a buffer of 3 in case there is a hardware mistake
+			if (forkliftStopper > 0) {
+				forklift.set(-0.6);
+				forkliftStopper--;
+			}
+		} else {
+			forklift.set(0);
 		}
 		
 		double cubeIn = OI.xbox.getLeftTrigger();
