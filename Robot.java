@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
@@ -16,6 +17,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
  **/
 public class Robot extends IterativeRobot {
 	SendableChooser<String> chooser = new SendableChooser<>();
+	
+	public Timer timer = new Timer();
+	
 	
 	/** Is this even used? **/
 	public static Robot self;
@@ -83,6 +87,9 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousInit() {
 		gameData = DriverStation.getInstance().getGameSpecificMessage();
+		start = System.currentTimeMillis();
+		timer.reset();
+		timer.start();
 	}
 
 	/**
@@ -91,9 +98,6 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
-		if (start == 0) {
-			start = System.currentTimeMillis();
-		}
 		
 		double time = System.currentTimeMillis();
 		
@@ -161,9 +165,29 @@ public class Robot extends IterativeRobot {
 				
 				break;
 			case 3:
-				if (time <= start + 1000) {
-					rightWheels.set(0.5);
-					leftWheels.set(0.5);
+				if (timer.get() < 1.0) {
+					rightWheels.set(-0.75);
+					leftWheels.set(0.75);
+				}/*else if (timer.get() < 0.8) {
+					rightWheels.set(0);
+					leftWheels.set(0);
+				} else if (timer.get() < 1.6) {
+					rightWheels.set(-0.75);
+					leftWheels.set(0.75);
+				} else if (timer.get() < 2.2) {
+					rightWheels.set(0);
+					leftWheels.set(0);
+					
+					forklift.set(0.6);
+				} else if (timer.get() < 2.7) {
+					forklift.set(0);
+					cubeMotor.set(-0.5);
+				}*/ else {
+					//cubeMotor.set(0);
+					rightWheels.set(0);
+					leftWheels.set(0);
+					
+					timer.stop();
 				}
 				
 				break;
@@ -193,14 +217,16 @@ public class Robot extends IterativeRobot {
 		
 		// Forklift (uses left bumper for up and right bumper for down)
 		if (OI.xbox.getRawButton(5)) { // Goes up!
-			forklift.set(0.6);
-			forkliftStopper++;
+			forklift.set(0.75);
+			//forkliftStopper++;
 		} else if (OI.xbox.getRawButton(6)) { // Goes down!
 			// Gives it a buffer of 3 in case there is a hardware mistake
-			if (forkliftStopper > 0) {
-				forklift.set(-0.6);
-				forkliftStopper--;
-			}
+			//if (forkliftStopper >= 0) {
+				forklift.set(-0.75);
+				//forkliftStopper--;
+			//} else {
+			//	forklift.set(0);
+			//}
 		} else {
 			forklift.set(0);
 		}
