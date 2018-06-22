@@ -1,6 +1,8 @@
 package org.usfirst.frc.team6489.robot;
 
 import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -20,8 +22,11 @@ public class Robot extends IterativeRobot {
 	
 	// Used in teleOp
 	public Boolean toggle = false;
-	public Boolean previousButton = false;
-	public Boolean currentButton = false;
+	public Boolean previousToggleButton = false;
+	public Boolean currentToggleButton = false;
+	
+	public Boolean open = false;
+	public Boolean close = false;
 	
 	/** Negative is forwards! **/
 	Spark rightWheels;
@@ -32,6 +37,9 @@ public class Robot extends IterativeRobot {
 	Spark forklift;
 	/** ? is out! **/
 	Spark cubeMotor;
+	
+	public DoubleSolenoid comp = new DoubleSolenoid(5, 4);
+	public Compressor c = new Compressor(0);
 
 	public static OI oi;
 
@@ -42,6 +50,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void robotInit() {
 		CameraServer.getInstance().startAutomaticCapture();
+		
+		c.setClosedLoopControl(true);
 		
 		// Wheels
 		rightWheels = new Spark(4);
@@ -90,12 +100,26 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		// Driving (no longer tank drive; uses left for front/back and right for direction)
 		
-		previousButton = currentButton;
-		currentButton = OI.xbox.getRawButton(3);
+		previousToggleButton = currentToggleButton;
+		currentToggleButton = OI.xbox.getRawButton(3);
 
-		if (currentButton && !previousButton) {
+		if (currentToggleButton && !previousToggleButton) {
 			toggle = toggle ? false : true;
 		}
+		
+		// Opens or closes one pneumatic side of our robot's arms
+		open = OI.xbox.getRawButton(4);
+		close = OI.xbox.getRawButton(2);
+		
+		if (open) {
+			comp.set(DoubleSolenoid.Value.kForward);
+		} else if (close) {
+			comp.set(DoubleSolenoid.Value.kReverse);
+		} else {
+			comp.set(DoubleSolenoid.Value.kOff);
+		}
+		
+		
 		
 		// Have to be reversed because something is sketchy
 		double speed = OI.xbox.getY1();
