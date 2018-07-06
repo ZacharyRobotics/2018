@@ -38,8 +38,16 @@ public class Robot extends IterativeRobot {
 	/** ? is out! **/
 	Spark cubeMotor;
 	
+	// In theory, the DoubleSolenoid controls the compressor automatically without
+	// the compressor object. We are operating under the assumption that the compressor
+	// won't turn on because the pressure switch isn't read properly, but in reality we 
+	// don't know what the problem is. The arms properly toggled when the compressor was 
+	// manually charged, but then they changed some stuff with the wiring and now even 
+	// those don't toggle. I'm operating on no sleep right now and this is the last meeting 
+	// I can make, so my debugging skills aren't what they usually are, so please forgive
+	// me if it's some stupid mistake.
 	public DoubleSolenoid comp = new DoubleSolenoid(5, 4);
-	public Compressor c = new Compressor(0);
+	//public Compressor c = new Compressor(0);
 
 	public static OI oi;
 
@@ -51,7 +59,7 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 		CameraServer.getInstance().startAutomaticCapture();
 		
-		c.setClosedLoopControl(true);
+		//c.setClosedLoopControl(true);
 		
 		// Wheels
 		rightWheels = new Spark(4);
@@ -101,15 +109,15 @@ public class Robot extends IterativeRobot {
 		// Driving (no longer tank drive; uses left for front/back and right for direction)
 		
 		previousToggleButton = currentToggleButton;
-		currentToggleButton = OI.xbox.getRawButton(3);
+		currentToggleButton = OI.xbox.getRawButton(3); // X
 
 		if (currentToggleButton && !previousToggleButton) {
 			toggle = toggle ? false : true;
 		}
 		
 		// Opens or closes one pneumatic side of our robot's arms
-		open = OI.xbox.getRawButton(4);
-		close = OI.xbox.getRawButton(2);
+		open = OI.xbox.getRawButton(4);  // Y
+		close = OI.xbox.getRawButton(2); // B
 		
 		if (open) {
 			comp.set(DoubleSolenoid.Value.kForward);
