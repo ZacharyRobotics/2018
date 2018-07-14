@@ -5,7 +5,6 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Spark;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -15,11 +14,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
  * directory.
  **/
 public class Robot extends IterativeRobot {
-	SendableChooser<String> chooser = new SendableChooser<>();
-	
-	/** Is this even used? **/
-	public static Robot self;
-	
 	// Used in teleOp
 	public Boolean toggle = false;
 	public Boolean previousToggleButton = false;
@@ -38,16 +32,8 @@ public class Robot extends IterativeRobot {
 	/** ? is out! **/
 	Spark cubeMotor;
 	
-	// In theory, the DoubleSolenoid controls the compressor automatically without
-	// the compressor object. We are operating under the assumption that the compressor
-	// won't turn on because the pressure switch isn't read properly, but in reality we 
-	// don't know what the problem is. The arms properly toggled when the compressor was 
-	// manually charged, but then they changed some stuff with the wiring and now even 
-	// those don't toggle. I'm operating on no sleep right now and this is the last meeting 
-	// I can make, so my debugging skills aren't what they usually are, so please forgive
-	// me if it's some stupid mistake.
-	public DoubleSolenoid comp = new DoubleSolenoid(5, 4);
-	//public Compressor c = new Compressor(0);
+	public DoubleSolenoid arm = new DoubleSolenoid(5, 4);
+	public Compressor comp = new Compressor();
 
 	public static OI oi;
 
@@ -59,7 +45,7 @@ public class Robot extends IterativeRobot {
 	public void robotInit() {
 		CameraServer.getInstance().startAutomaticCapture();
 		
-		//c.setClosedLoopControl(true);
+		comp.start();
 		
 		// Wheels
 		rightWheels = new Spark(4);
@@ -72,23 +58,11 @@ public class Robot extends IterativeRobot {
 		cubeMotor = new Spark(0);
 		
 		oi = new OI();
-		self = this;
 	}
 
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select
-	 * between different autonomous modes using the dashboard. The sendable
-	 * chooser code works with the Java SmartDashboard. If you prefer the
-	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-	 * getString line to get the auto name from the text box below the Gyro.
-	 *
-	 * You can add additional auto modes by adding additional comparisons to the
-	 * switch structure below with additional strings. If using the
-	 * SendableChooser make sure to add them to the chooser code above as well.
-	 **/
 	@Override
 	public void autonomousInit() {
-
+		comp.start(); // Should start compressor in auto too
 	}
 
 	/**
@@ -106,7 +80,7 @@ public class Robot extends IterativeRobot {
 	 **/
 	@Override
 	public void teleopPeriodic() {
-		// Driving (no longer tank drive; uses left for front/back and right for direction)
+		// Driving (tank style again)
 		
 		previousToggleButton = currentToggleButton;
 		currentToggleButton = OI.xbox.getRawButton(3); // X
@@ -120,41 +94,36 @@ public class Robot extends IterativeRobot {
 		close = OI.xbox.getRawButton(2); // B
 		
 		if (open) {
-			comp.set(DoubleSolenoid.Value.kForward);
+			arm.set(DoubleSolenoid.Value.kForward);
 		} else if (close) {
-			comp.set(DoubleSolenoid.Value.kReverse);
+			arm.set(DoubleSolenoid.Value.kReverse);
 		} else {
-			comp.set(DoubleSolenoid.Value.kOff);
+			arm.set(DoubleSolenoid.Value.kOff);
 		}
-		
-		
 		
 		// Have to be reversed because something is sketchy
-		double speed = OI.xbox.getY1();
-		double right = speed + (OI.xbox.getX2() / 2);
-		double left = speed - (OI.xbox.getX2() / 2);
-		rightWheels.set((double)(toggle ? right / 2 : right / 1.25));
-		leftWheels.set((double)(toggle ? -left / 2 : -left / 1.25));
+		rightWheels.set((double)(toggle ? OI.xbox.getY2() / 2 : OI.xbox.getY2()));
+		leftWheels.set((double)(toggle ? -OI.xbox.getY1() / 2 : -OI.xbox.getY1()));
 		
-		// Forklift (uses left bumper for up and right bumper for down)
-		if (OI.xbox.getRawButton(5)) { // Goes up!
-			forklift.set(0.75);
-		} else if (OI.xbox.getRawButton(6)) { // Goes down!
-			forklift.set(-0.75);
+		// Cube intake/output (uses left bumper for out and right bumper for in) - maybe idk
+		if (OI.xbox.getRawButton(5)) { // Sucks in
+			cubeMotor.set(0.5);
+		} else if (OI.xbox.getRawButton(6)) { // Goes out
+			cubeMotor.set(-0.5);
 		} else {
-			forklift.set(0);
+			cubeMotor.set(0);
 		}
 		
-		double cubeIn = OI.xbox.getLeftTrigger();
-		double cubeOut = OI.xbox.getRightTrigger();
+		double forkliftUp = OI.xbox.getLeftTrigger();
+		double forkliftDown = OI.xbox.getRightTrigger();
 		
-		// Cube intake/output (uses left trigger for in and right trigger for out)
-		if (cubeIn == 0 && cubeOut == 0) {
-			cubeMotor.set(0);
-		} else if (cubeIn != 0) {
-			cubeMotor.set(cubeIn / 2);
-		} else if (cubeOut != 0) {
-			cubeMotor.set(-cubeOut / 2);
+		// Forklift (uses left trigger for in and right trigger for out)
+		if (forkliftUp == 0 && forkliftDown == 0) {
+			forklift.set(0);
+		} else if (forkliftUp != 0) {  // Goes up!
+			forklift.set(0.75);
+		} else if (forkliftDown != 0) { // Goes down!
+			forklift.set(-0.75);
 		}
 	}
 }
